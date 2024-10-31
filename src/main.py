@@ -25,82 +25,90 @@ def fetch_related_counts(sf, account_id):
         (SELECT Id FROM Events)
     FROM Account WHERE Id = '{account_id}'
     """
-
     try:
         accounts = sf.query(query)
-        
-        # Verifica se a consulta retornou registros
         if accounts and accounts['records']:
-            return accounts['records'][0]  # Retorna o primeiro registro
+            return accounts['records'][0]
         else:
-            print(f"No records found for account ID: {account_id}")  # Mensagem de depuração
-            return {}  # Retorna um dicionário vazio para evitar erros
+            print(f"[DEBUG] No records found for account ID: {account_id}")
+            return {}
     except Exception as e:
-        print(f"Error querying Salesforce for account ID {account_id}: {e}")
+        print(f"[ERROR] Error querying Salesforce for account ID {account_id}: {e}")
         return {}
 
-def main(input_file_path):
+def process_excel(sf, input_file_path):
     try:
-        # Listar arquivos na pasta 'data'
-        print("Arquivos na pasta 'data':", os.listdir('data'))
-
-        sf = Salesforce(username=USERNAME, password=PASSWORD, security_token=SECURITY_TOKEN, domain=DOMAIN)
-        print("Connected to Salesforce!")
-
-        # Verifica as contas e salva o resultado
-        verification_result = verify_accounts(sf)
-
+        print(f"[INFO] Processing file: {input_file_path}")
+        
+        # Carregar dados do Excel
         df = pd.read_excel(input_file_path)
 
-        # Adicionar novas colunas para as contagens
-        df['Case Count'] = 0
-        df['Opportunity Count'] = 0
-        df['Contact Count'] = 0
-        df['Asset Count'] = 0
-        df['Contract Count'] = 0
-        df['Order Count'] = 0
-        df['Task Count'] = 0
-        df['Event Count'] = 0
+        # Adicionar colunas para contagens de objetos relacionados
+        relation_columns = [
+            'Case Count', 'Opportunity Count', 'Contact Count', 'Asset Count',
+            'Contract Count', 'Order Count', 'Task Count', 'Event Count'
+        ]
+        for col in relation_columns:
+            df[col] = 0
 
-        # Loop através das contas
+        verification_result = verify_accounts(sf)
         for index, row in df.iterrows():
-            account_id = row['Account_18_Digit_ID__c']
-            if row['STATUS'] == 'NO INFO' and account_id in verification_result['existing_ids']:
+            account_id = row.get('Account_18_Digit_ID__c')
+            status = row.get('STATUS', '')
+
+            if status == 'NO INFO' and account_id in verification_result['existing_ids']:
                 related_counts = fetch_related_counts(sf, account_id)
 
-                # Checa se o related_counts está vazio ou se cada relacionamento é um dicionário antes de acessar `.get()`
-                case_records = related_counts.get('Cases', {}).get('records', []) if isinstance(related_counts.get('Cases'), dict) else []
-                opportunity_records = related_counts.get('Opportunities', {}).get('records', []) if isinstance(related_counts.get('Opportunities'), dict) else []
-                contact_records = related_counts.get('Contacts', {}).get('records', []) if isinstance(related_counts.get('Contacts'), dict) else []
-                asset_records = related_counts.get('Assets', {}).get('records', []) if isinstance(related_counts.get('Assets'), dict) else []
-                contract_records = related_counts.get('Contracts', {}).get('records', []) if isinstance(related_counts.get('Contracts'), dict) else []
-                order_records = related_counts.get('Orders', {}).get('records', []) if isinstance(related_counts.get('Orders'), dict) else []
-                task_records = related_counts.get('Tasks', {}).get('records', []) if isinstance(related_counts.get('Tasks'), dict) else []
-                event_records = related_counts.get('Events', {}).get('records', []) if isinstance(related_counts.get('Events'), dict) else []
+                # Contagens por tipo de relacionamento
+                try:
+                    case_records = related_counts.get('Cases', {}).get('records', [])
+                    opportunity_records = related_counts.get('Opportunities', {}).get('records', [])
+                    contact_records = related_counts.get('Contacts', {}).get('records', [])
+                    asset_records = related_counts.get('Assets', {}).get('records', [])
+                    contract_records = related_counts.get('Contracts', {}).get('records', [])
+                    order_records = related_counts.get('Orders', {}).get('records', [])
+                    task_records = related_counts.get('Tasks', {}).get('records', [])
+                    event_records = related_counts.get('Events', {}).get('records', [])
 
-                # Preencher contagens nas colunas
-                df.at[index, 'Case Count'] = len(case_records)
-                df.at[index, 'Opportunity Count'] = len(opportunity_records)
-                df.at[index, 'Contact Count'] = len(contact_records)
-                df.at[index, 'Asset Count'] = len(asset_records)
-                df.at[index, 'Contract Count'] = len(contract_records)
-                df.at[index, 'Order Count'] = len(order_records)
-                df.at[index, 'Task Count'] = len(task_records)
-                df.at[index, 'Event Count'] = len(event_records)
-                    
-                print(f"Processed account {account_id} with related counts: Cases={len(case_records)}, Opportunities={len(opportunity_records)}, Contacts={len(contact_records)}, Assets={len(asset_records)}, Contracts={len(contract_records)}, Orders={len(order_records)}, Tasks={len(task_records)}, Events={len(event_records)}")
+                    # Preencher contagens nas colunas
+                    df.at[index, 'Case Count'] = len(case_records)
+                    df.at[index, 'Opportunity Count'] = len(opportunity_records)
+                    df.at[index, 'Contact Count'] = len(contact_records)
+                    df.at[index, 'Asset Count'] = len(asset_records)
+                    df.at[index, 'Contract Count'] = len(contract_records)
+                    df.at[index, 'Order Count'] = len(order_records)
+                    df.at[index, 'Task Count'] = len(task_records)
+                    df.at[index, 'Event Count'] = len(event_records)
+
+                    print(f"[DEBUG] Processed account {account_id} with counts: Cases={len(case_records)}, Opportunities={len(opportunity_records)}, Contacts={len(contact_records)}, Assets={len(asset_records)}, Contracts={len(contract_records)}, Orders={len(order_records)}, Tasks={len(task_records)}, Events={len(event_records)}")
+                except Exception as inner_e:
+                    print(f"[ERROR] Error processing related counts for account ID {account_id}: {inner_e}")
             else:
-                print(f"No related counts found or status was not 'NO INFO' for account ID: {account_id}")
+                print(f"[INFO] Account {account_id} skipped (STATUS: {status})")
 
         # Salvar o DataFrame atualizado de volta ao Excel
         df.to_excel(input_file_path, index=False)
-        print(f"Updated results saved to {input_file_path}")
+        print(f"[INFO] Updated results saved to {input_file_path}")
 
-    except SalesforceAuthenticationFailed as e:
-        print(f"Authentication failed: {e}")
+    except FileNotFoundError as fnf_error:
+        print(f"[ERROR] File not found: {fnf_error}")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"[ERROR] An error occurred during Excel processing: {e}")
+
+def main():
+    input_file_path = os.path.join('data', 'conta_duplicadas_verificacao.xlsx')
+    try:
+        print(f"[INFO] Listing files in 'data' directory: {os.listdir('data')}")
+        
+        sf = Salesforce(username=USERNAME, password=PASSWORD, security_token=SECURITY_TOKEN, domain=DOMAIN)
+        print("[INFO] Connected to Salesforce successfully!")
+        
+        # Processa o arquivo Excel
+        process_excel(sf, input_file_path)
+    except SalesforceAuthenticationFailed as auth_error:
+        print(f"[ERROR] Salesforce authentication failed: {auth_error}")
+    except Exception as e:
+        print(f"[ERROR] Unexpected error in main: {e}")
 
 if __name__ == "__main__":
-    input_file_path = os.path.join('data', 'conta_duplicadas_verificacao.xlsx')
-    main(input_file_path)
+    main()
