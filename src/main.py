@@ -1,20 +1,17 @@
-# src/main.py
 import sys
 import os
 import pandas as pd
 from simple_salesforce import Salesforce, SalesforceAuthenticationFailed
+from verify_duplicates import verify_accounts
 
 # Adiciona o diretório atual ao path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config import USERNAME, PASSWORD, SECURITY_TOKEN, DOMAIN
 
-try:
-    sf = Salesforce(username=USERNAME, password=PASSWORD, security_token=SECURITY_TOKEN, domain=DOMAIN)
-    print("Connected to Salesforce!")
-
-    # Consulta para listar contas e contar objetos relacionados
-    query = """
+def fetch_related_counts(sf, account_id):
+    # Consulta para contar objetos relacionados
+    query = f"""
     SELECT 
         Id,
         Name,
@@ -26,43 +23,84 @@ try:
         (SELECT Id FROM Orders),
         (SELECT Id FROM Tasks),
         (SELECT Id FROM Events)
-    FROM Account
+    FROM Account WHERE Id = '{account_id}'
     """
-    
-    accounts = sf.query_all(query)
 
-    # Depuração: imprime a resposta da consulta
-    print(f"Query Response: {accounts}")
-
-    if 'records' not in accounts or accounts['records'] is None:
-        print("No records found in the Salesforce query.")
-    else:
-        accounts = accounts['records']
+    try:
+        accounts = sf.query(query)
         
-        # Processamento e contagem dos objetos relacionados
-        data = []
-        for account in accounts:
-            data.append({
-                'Account Id': account['Id'],
-                'Account Name': account['Name'],
-                'Cases Count': len(account.get('Cases', {}).get('records', [])) if account.get('Cases') else 0,
-                'Opportunities Count': len(account.get('Opportunities', {}).get('records', [])) if account.get('Opportunities') else 0,
-                'Contacts Count': len(account.get('Contacts', {}).get('records', [])) if account.get('Contacts') else 0,
-                'Assets Count': len(account.get('Assets', {}).get('records', [])) if account.get('Assets') else 0,
-                'Contracts Count': len(account.get('Contracts', {}).get('records', [])) if account.get('Contracts') else 0,
-                'Orders Count': len(account.get('Orders', {}).get('records', [])) if account.get('Orders') else 0,
-                'Tasks Count': len(account.get('Tasks', {}).get('records', [])) if account.get('Tasks') else 0,
-                'Events Count': len(account.get('Events', {}).get('records', [])) if account.get('Events') else 0
-            })
+        # Verifica se a consulta retornou registros
+        if accounts and accounts['records']:
+            return accounts['records'][0]  # Retorna o primeiro registro
+        else:
+            print(f"No records found for account ID: {account_id}")  # Mensagem de depuração
+            return {}  # Retorna um dicionário vazio para evitar erros
+    except Exception as e:
+        print(f"Error querying Salesforce for account ID {account_id}: {e}")
+        return {}
 
-        df = pd.DataFrame(data)
-        output_folder = 'data'
-        os.makedirs(output_folder, exist_ok=True)
-        output_file_path = os.path.join(output_folder, 'Salesforce_Accounts_Related_Objects.xlsx')
-        df.to_excel(output_file_path, index=False)
-        print(f"Data saved to {output_file_path}")
+def main(input_file_path):
+    try:
+        # Listar arquivos na pasta 'data'
+        print("Arquivos na pasta 'data':", os.listdir('data'))
 
-except SalesforceAuthenticationFailed as e:
-    print(f"Authentication failed: {e}")
-except Exception as e:
-    print(f"An error occurred: {e}")
+        sf = Salesforce(username=USERNAME, password=PASSWORD, security_token=SECURITY_TOKEN, domain=DOMAIN)
+        print("Connected to Salesforce!")
+
+        # Verifica as contas e salva o resultado
+        verification_result = verify_accounts(sf)
+
+        df = pd.read_excel(input_file_path)
+
+        # Adicionar novas colunas para as contagens
+        df['Case Count'] = 0
+        df['Opportunity Count'] = 0
+        df['Contact Count'] = 0
+        df['Asset Count'] = 0
+        df['Contract Count'] = 0
+        df['Order Count'] = 0
+        df['Task Count'] = 0
+        df['Event Count'] = 0
+
+        # Loop através das contas
+        for index, row in df.iterrows():
+            account_id = row['Account_18_Digit_ID__c']
+            if row['STATUS'] == 'NO INFO' and account_id in verification_result['existing_ids']:
+                related_counts = fetch_related_counts(sf, account_id)
+
+                # Checa se o related_counts está vazio ou se cada relacionamento é um dicionário antes de acessar `.get()`
+                case_records = related_counts.get('Cases', {}).get('records', []) if isinstance(related_counts.get('Cases'), dict) else []
+                opportunity_records = related_counts.get('Opportunities', {}).get('records', []) if isinstance(related_counts.get('Opportunities'), dict) else []
+                contact_records = related_counts.get('Contacts', {}).get('records', []) if isinstance(related_counts.get('Contacts'), dict) else []
+                asset_records = related_counts.get('Assets', {}).get('records', []) if isinstance(related_counts.get('Assets'), dict) else []
+                contract_records = related_counts.get('Contracts', {}).get('records', []) if isinstance(related_counts.get('Contracts'), dict) else []
+                order_records = related_counts.get('Orders', {}).get('records', []) if isinstance(related_counts.get('Orders'), dict) else []
+                task_records = related_counts.get('Tasks', {}).get('records', []) if isinstance(related_counts.get('Tasks'), dict) else []
+                event_records = related_counts.get('Events', {}).get('records', []) if isinstance(related_counts.get('Events'), dict) else []
+
+                # Preencher contagens nas colunas
+                df.at[index, 'Case Count'] = len(case_records)
+                df.at[index, 'Opportunity Count'] = len(opportunity_records)
+                df.at[index, 'Contact Count'] = len(contact_records)
+                df.at[index, 'Asset Count'] = len(asset_records)
+                df.at[index, 'Contract Count'] = len(contract_records)
+                df.at[index, 'Order Count'] = len(order_records)
+                df.at[index, 'Task Count'] = len(task_records)
+                df.at[index, 'Event Count'] = len(event_records)
+                    
+                print(f"Processed account {account_id} with related counts: Cases={len(case_records)}, Opportunities={len(opportunity_records)}, Contacts={len(contact_records)}, Assets={len(asset_records)}, Contracts={len(contract_records)}, Orders={len(order_records)}, Tasks={len(task_records)}, Events={len(event_records)}")
+            else:
+                print(f"No related counts found or status was not 'NO INFO' for account ID: {account_id}")
+
+        # Salvar o DataFrame atualizado de volta ao Excel
+        df.to_excel(input_file_path, index=False)
+        print(f"Updated results saved to {input_file_path}")
+
+    except SalesforceAuthenticationFailed as e:
+        print(f"Authentication failed: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    input_file_path = os.path.join('data', 'conta_duplicadas_verificacao.xlsx')
+    main(input_file_path)

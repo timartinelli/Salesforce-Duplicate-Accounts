@@ -2,19 +2,14 @@ import os
 import pandas as pd
 from simple_salesforce import Salesforce, SalesforceAuthenticationFailed
 
-# Funções para a consulta no Salesforce
 def get_salesforce_ids(sf):
     query = "SELECT Id, Name FROM Account"
     accounts = sf.query_all(query)
     return {account['Id']: account['Name'] for account in accounts['records']}  # Retorna um dicionário com ID e Nome
 
-def main():
-    # Configurações do Salesforce
-    from config import USERNAME, PASSWORD, SECURITY_TOKEN, DOMAIN
-
+def verify_accounts(sf):
     try:
-        sf = Salesforce(username=USERNAME, password=PASSWORD, security_token=SECURITY_TOKEN, domain=DOMAIN)
-        print("Connected to Salesforce!")
+        print("Verifying accounts...")
 
         # Passo 1: Exportar todos os IDs e nomes de contas do Salesforce
         salesforce_accounts = get_salesforce_ids(sf)
@@ -48,10 +43,12 @@ def main():
         new_accounts_df.to_excel(new_accounts_file_path, index=False)
         print(f"New accounts saved to {new_accounts_file_path}")
 
+        return {'existing_ids': salesforce_ids}
+
     except SalesforceAuthenticationFailed as e:
         print(f"Authentication failed: {e}")
     except Exception as e:
         print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    main()
+    pass  # O código não deve ser executado diretamente
