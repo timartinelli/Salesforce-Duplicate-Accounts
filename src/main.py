@@ -31,7 +31,7 @@ def fetch_related_counts(sf, account_id):
             return accounts['records'][0]
         else:
             print(f"[DEBUG] No records found for account ID: {account_id}")
-            return {}
+            return {}  # Retorna um dicionário vazio
     except Exception as e:
         print(f"[ERROR] Error querying Salesforce for account ID {account_id}: {e}")
         return {}
@@ -59,8 +59,12 @@ def process_excel(sf, input_file_path):
             if status == 'NO INFO' and account_id in verification_result['existing_ids']:
                 related_counts = fetch_related_counts(sf, account_id)
 
-                # Contagens por tipo de relacionamento
+                if not isinstance(related_counts, dict) or not related_counts:
+                    print(f"[WARNING] No related data for account ID {account_id}. Related counts: {related_counts}")
+                    continue
+
                 try:
+                    # Obter contagens de registros de cada relacionamento
                     case_records = related_counts.get('Cases', {}).get('records', [])
                     opportunity_records = related_counts.get('Opportunities', {}).get('records', [])
                     contact_records = related_counts.get('Contacts', {}).get('records', [])
@@ -83,6 +87,7 @@ def process_excel(sf, input_file_path):
                     print(f"[DEBUG] Processed account {account_id} with counts: Cases={len(case_records)}, Opportunities={len(opportunity_records)}, Contacts={len(contact_records)}, Assets={len(asset_records)}, Contracts={len(contract_records)}, Orders={len(order_records)}, Tasks={len(task_records)}, Events={len(event_records)}")
                 except Exception as inner_e:
                     print(f"[ERROR] Error processing related counts for account ID {account_id}: {inner_e}")
+                    print(f"[DEBUG] Related counts data: {related_counts}")  # Exibe o conteúdo completo em caso de erro
             else:
                 print(f"[INFO] Account {account_id} skipped (STATUS: {status})")
 
