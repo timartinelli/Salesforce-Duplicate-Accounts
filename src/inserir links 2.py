@@ -1,21 +1,21 @@
 import openpyxl
 
-# Arquivos de entrada e saída
+# Input and output files
 input_file = 'data/conta_duplicadas_no_info_arquivo_com_links.xlsx'
-output_file = 'data/conta_duplicadas_no_info_arquivo_com_links_clicaveis.xlsx'
+output_file = 'data/conta_duplicadas_no_info_arquivo_com_links_clickable.xlsx'
 
-# Carregar o workbook e a planilha
+# Load the workbook and worksheet
 workbook = openpyxl.load_workbook(input_file)
 sheet = workbook['Contas']
 
-# Iterar sobre as células da coluna AI (coluna 35) e transformar em links clicáveis
-for row in range(2, sheet.max_row + 1):  # Começa na linha 2 até a última linha
+# Iterate over the cells in column AI (column 35) and convert them into clickable links
+for row in range(2, sheet.max_row + 1):  # Starts from row 2 to the last row
     cell = sheet[f'AI{row}']
-    if cell.value:  # Apenas se houver um valor
-        # Aplicar a fórmula de link clicável
+    if cell.value:  # Only if there is a value
+        # Apply the clickable hyperlink formula
         cell.value = f'=HYPERLINK("{cell.value}", "{cell.value}")'
 
-# Salvar o arquivo de saída
+# Save the output file
 workbook.save(output_file)
 
-print(f'Links clicáveis na coluna AI foram salvos em: {output_file}')
+print(f'Clickable links in column AI have been saved to: {output_file}')

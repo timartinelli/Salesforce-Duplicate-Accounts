@@ -3,7 +3,7 @@ import pandas as pd
 def check_duplicates(sf, salesforce_accounts):
     print("Checking for duplicate NEO_Cpfcnpj__c...")
 
-    # Passo 1: Coletar NEO_Cpfcnpj__c das contas
+    # Step 1: Collect NEO_Cpfcnpj__c from accounts
     cpf_data = {}
     for account in salesforce_accounts:
         cpf_value = account.get('NEO_Cpfcnpj__c')
@@ -13,13 +13,13 @@ def check_duplicates(sf, salesforce_accounts):
             else:
                 cpf_data[cpf_value] = [account['Id']]
     
-    # Passo 2: Filtrar duplicatas
+    # Step 2: Filter duplicates
     duplicates = {cpf: ids for cpf, ids in cpf_data.items() if len(ids) > 1}
     
-    # Passo 3: Criar arquivo com contas duplicadas
+    # Step 3: Create file with duplicated accounts
     if duplicates:
         df_duplicates = pd.DataFrame([(cpf, id) for cpf, ids in duplicates.items() for id in ids], columns=['NEO_Cpfcnpj__c', 'Account ID'])
-        output_file_path = 'data/contas_duplicadas.xlsx'
+        output_file_path = 'data/duplicated_accounts.xlsx'
         df_duplicates.to_excel(output_file_path, index=False)
         print(f"Duplicated accounts saved to {output_file_path}")
     else:

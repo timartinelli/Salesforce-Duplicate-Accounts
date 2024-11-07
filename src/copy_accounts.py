@@ -1,23 +1,43 @@
-import pandas as pd
+import logging
 import os
+from simple_salesforce import Salesforce
+from dotenv import load_dotenv
 
-def copy_and_mark_duplicates(duplicates):
-    input_file_path = os.path.join('data_source', 'conta_duplicadas.xlsx')
+# Logging configuration
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+def connect_to_salesforce():
+    # Load environment variables from the .env file
+    load_dotenv()
     
-    if not os.path.exists(input_file_path):
-        print(f"Input file {input_file_path} does not exist.")
-        return
+    username = os.getenv('SALESFORCE_USERNAME')
+    password = os.getenv('SALESFORCE_PASSWORD')
+    security_token = os.getenv('SALESFORCE_SECURITY_TOKEN')
+    domain = os.getenv('SALESFORCE_DOMAIN', 'login')  # 'login' for production, 'test' for sandbox
 
-    df = pd.read_excel(input_file_path)
+    # Log the connection details
+    logger.debug("Attempting to connect to Salesforce...")
+    logger.debug(f"Username: `{username}`")
+    logger.debug(f"Domain: `{domain}`")
+    logger.debug(f"Security Token: `{security_token}`")
+    logger.debug(f"Password: `{password}`")
 
-    # Nova coluna para marcar IDs duplicados
-    df['Duplicated Account IDs'] = ''
+    # Log sensitive information (do not log password or token)
+    logger.debug("Attempting to authenticate...")
 
-    for cpf_cnpj, ids in duplicates.items():
-        for idx in df.index:
-            if df.at[idx, 'NEO_Cpfcnpj__c'] == cpf_cnpj:
-                df.at[idx, 'Duplicated Account IDs'] = ', '.join(ids)
+    try:
+        # Connect to Salesforce
+        sf = Salesforce(username=username, password=password, security_token=security_token, domain=domain)
+        logger.info("Successfully connected to Salesforce!")
+        return sf
+    except Exception as e:
+        logger.error(f"Authentication failed: {e}")
+        raise
 
-    output_file_path = os.path.join('data', 'conta_duplicadas_marked.xlsx')
-    df.to_excel(output_file_path, index=False)
-    print(f"Marked duplicates saved to {output_file_path}")
+if __name__ == "__main__":
+    try:
+        sf = connect_to_salesforce()
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+

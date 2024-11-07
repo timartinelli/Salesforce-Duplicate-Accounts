@@ -2,7 +2,7 @@
 from dotenv import load_dotenv
 import os
 
-# Carrega variáveis de ambiente do arquivo .env
+# Load environment variables from the .env file
 load_dotenv()
 
 USERNAME = os.getenv('SALESFORCE_USERNAME')

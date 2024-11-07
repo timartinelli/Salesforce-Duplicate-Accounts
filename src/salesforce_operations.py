@@ -1,22 +1,22 @@
-# salesforce_operations.py
+# operacoes_salesforce.py
 from simple_salesforce import Salesforce
 
-def get_salesforce_ids(sf):
+def obter_ids_salesforce(sf):
     """Retorna um dicionário com IDs, Nomes e NEO_Cpfcnpj__c das contas no Salesforce."""
     try:
         # Consulta para obter ID, Nome e NEO_Cpfcnpj__c
-        query = "SELECT Id, Name, NEO_Cpfcnpj__c FROM Account"
-        accounts = sf.query_all(query)
+        consulta = "SELECT Id, Name, NEO_Cpfcnpj__c FROM Account"
+        contas = sf.query_all(consulta)
 
         # Cria um dicionário com ID como chave e um dicionário como valor
         return {
-            account['Id']: {
-                'Name': account['Name'],
-                'NEO_Cpfcnpj__c': account.get('NEO_Cpfcnpj__c')  # Usando get() para evitar KeyError se o campo não existir
+            conta['Id']: {
+                'Nome': conta['Name'],
+                'NEO_Cpfcnpj__c': conta.get('NEO_Cpfcnpj__c')  # Usando get() para evitar KeyError se o campo não existir
             }
-            for account in accounts['records']
+            for conta in contas['records']
         }
 
     except Exception as e:
-        print(f"An error occurred while fetching accounts from Salesforce: {e}")
+        print(f"Ocorreu um erro ao buscar contas do Salesforce: {e}")
         return {}

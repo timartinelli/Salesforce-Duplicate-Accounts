@@ -5,21 +5,21 @@ def list_salesforce_accounts(sf):
     """Lists all accounts from Salesforce and saves them in an Excel file with ID, Name, and NEO_Cpfcnpj__c."""
     logging.debug("Fetching all accounts from Salesforce.")
     try:
-        # Consultando todas as contas do Salesforce com o campo NEO_Cpfcnpj__c
+        # Querying all accounts from Salesforce with the NEO_Cpfcnpj__c field
         query = "SELECT Id, Name, NEO_Cpfcnpj__c FROM Account"
         result = sf.query_all(query)
         
-        # Extraindo os dados para uma lista
+        # Extracting data into a list
         accounts_data = [
             {
                 "Id": account["Id"],
                 "Name": account["Name"],
-                "NEO_Cpfcnpj__c": account.get("NEO_Cpfcnpj__c", None)  # Usando get para evitar erro se o campo estiver vazio
+                "NEO_Cpfcnpj__c": account.get("NEO_Cpfcnpj__c", None)  # Using get to avoid error if the field is empty
             }
             for account in result["records"]
         ]
         
-        # Salvando os dados em um DataFrame e exportando para Excel
+        # Saving data to a DataFrame and exporting to Excel
         df = pd.DataFrame(accounts_data)
         df.to_excel('data/salesforce_accounts.xlsx', index=False)
         

@@ -1,24 +1,24 @@
 import openpyxl
 
-# Arquivo de entrada e saída
+# Input and output files
 input_file = 'data/conta_duplicadas_no_info.xlsx'
-output_file_links = 'data/conta_duplicadas_no_info_arquivo_com_links.xlsx'
+output_file_links = 'data/conta_duplicadas_no_info_file_with_links.xlsx'
 
-# Passo 1: Abrir o arquivo e converter valores em links clicáveis na coluna AJ
+# Step 1: Open the file and convert values into clickable links in column AJ
 workbook = openpyxl.load_workbook(input_file)
 sheet = workbook['Contas']
 
-# Coluna AJ (índice 36) para converter valores em links
-for row in sheet.iter_rows(min_row=2, max_row=954, min_col=36, max_col=36):  # Coluna AJ é a coluna 36
+# Column AJ (index 36) to convert values into links
+for row in sheet.iter_rows(min_row=2, max_row=954, min_col=36, max_col=36):  # Column AJ is column 36
     for cell in row:
-        if cell.value and isinstance(cell.value, str):  # Verifica se há valor e é uma string
+        if cell.value and isinstance(cell.value, str):  # Check if there is a value and it's a string
             link = cell.value
-            # Definir o hyperlink na célula
+            # Set the hyperlink in the cell
             cell.hyperlink = link
-            cell.value = link  # Define o texto visível da célula como o valor do link
-            cell.style = "Hyperlink"  # Aplica o estilo de link (opcional)
+            cell.value = link  # Set the visible text of the cell as the link value
+            cell.style = "Hyperlink"  # Apply the hyperlink style (optional)
 
-# Salva o arquivo com links clicáveis
+# Save the file with clickable links
 workbook.save(output_file_links)
 
-print(f'Links na coluna AJ convertidos com sucesso para o arquivo {output_file_links}')
+print(f'Links in column AJ successfully converted to the file {output_file_links}')

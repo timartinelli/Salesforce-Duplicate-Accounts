@@ -3,40 +3,40 @@ import os
 from simple_salesforce import Salesforce
 from dotenv import load_dotenv
 
-# Configuração do logging
+# Logging configuration
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def connect_to_salesforce():
-    # Carrega as variáveis de ambiente do arquivo .env
+    # Load environment variables from the .env file
     load_dotenv()
     
     username = os.getenv('SALESFORCE_USERNAME')
     password = os.getenv('SALESFORCE_PASSWORD')
     security_token = os.getenv('SALESFORCE_SECURITY_TOKEN')
-    domain = os.getenv('SALESFORCE_DOMAIN', 'login')  # 'login' para produção, 'test' para sandbox
+    domain = os.getenv('SALESFORCE_DOMAIN', 'login')  # 'login' for production, 'test' for sandbox
 
-    # Logando as informações de conexão
-    logger.debug("Tentando conectar ao Salesforce...")
-    logger.debug(f"Usuário: `{username}`")
-    logger.debug(f"Domínio: `{domain}`")
-    logger.debug(f"security_token: `{security_token}`")
-    logger.debug(f"password: `{password}`")
+    # Logging connection information
+    logger.debug("Attempting to connect to Salesforce...")
+    logger.debug(f"Username: `{username}`")
+    logger.debug(f"Domain: `{domain}`")
+    logger.debug(f"Security Token: `{security_token}`")
+    logger.debug(f"Password: `{password}`")
 
-    # Adiciona informações de segurança (não logar a senha ou token)
-    logger.debug("Tentando autenticar...")
+    # Adding security (do not log password or token)
+    logger.debug("Attempting to authenticate...")
 
     try:
-        # Conecta ao Salesforce
+        # Connect to Salesforce
         sf = Salesforce(username=username, password=password, security_token=security_token, domain=domain)
-        logger.info("Conexão bem-sucedida ao Salesforce!")
+        logger.info("Successfully connected to Salesforce!")
         return sf
     except Exception as e:
-        logger.error(f"Falha na autenticação: {e}")
+        logger.error(f"Authentication failed: {e}")
         raise
 
 if __name__ == "__main__":
     try:
         sf = connect_to_salesforce()
     except Exception as e:
-        logger.error(f"Ocorreu um erro: {e}")
+        logger.error(f"An error occurred: {e}")

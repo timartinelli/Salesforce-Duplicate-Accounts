@@ -2,28 +2,29 @@ import pandas as pd
 import logging
 from simple_salesforce import Salesforce
 
+# Configurando o logger
 logger = logging.getLogger(__name__)
 
-# Definindo as consultas SQL para cada objeto relacionado
+# Consultas SQL para contar objetos relacionados à conta
 RELATED_OBJECT_QUERIES = {
-    'Opportunities': "SELECT count() FROM Opportunity WHERE AccountId = '{account_id}'",
-    'Contacts': "SELECT count() FROM Contact WHERE AccountId = '{account_id}'",
-    'Cases': "SELECT count() FROM Case WHERE AccountId = '{account_id}'",
-    'Tasks': "SELECT count() FROM Task WHERE WhatId = '{account_id}'",
-    'Events': "SELECT count() FROM Event WHERE WhatId = '{account_id}'",
-    'Campaigns': "SELECT count() FROM Campaign WHERE AccountId = '{account_id}'",
-    'Notes': "SELECT count() FROM Note WHERE ParentId = '{account_id}'",
-    'Contracts': "SELECT count() FROM Contract WHERE AccountId = '{account_id}'",
-    'Invoices': "SELECT count() FROM Invoice WHERE AccountId = '{account_id}'",
-    'Orders': "SELECT count() FROM Order WHERE AccountId = '{account_id}'",
-    'Products': "SELECT count() FROM Product2 WHERE AccountId = '{account_id}'",
-    'PaymentInvoices': "SELECT count() FROM PaymentInvoice WHERE AccountId = '{account_id}'",
-    'BusinessReports': "SELECT count() FROM BusinessReport WHERE AccountId = '{account_id}'",
-    'Documents': "SELECT count() FROM Document WHERE AccountId = '{account_id}'"
+    'Oportunidades': "SELECT count() FROM Opportunity WHERE AccountId = '{account_id}'",
+    'Contatos': "SELECT count() FROM Contact WHERE AccountId = '{account_id}'",
+    'Casos': "SELECT count() FROM Case WHERE AccountId = '{account_id}'",
+    'Tarefas': "SELECT count() FROM Task WHERE WhatId = '{account_id}'",
+    'Eventos': "SELECT count() FROM Event WHERE WhatId = '{account_id}'",
+    'Campanhas': "SELECT count() FROM Campaign WHERE AccountId = '{account_id}'",
+    'Notas': "SELECT count() FROM Note WHERE ParentId = '{account_id}'",
+    'Contratos': "SELECT count() FROM Contract WHERE AccountId = '{account_id}'",
+    'Faturas': "SELECT count() FROM Invoice WHERE AccountId = '{account_id}'",
+    'Pedidos': "SELECT count() FROM Order WHERE AccountId = '{account_id}'",
+    'Produtos': "SELECT count() FROM Product2 WHERE AccountId = '{account_id}'",
+    'FaturasDePagamento': "SELECT count() FROM PaymentInvoice WHERE AccountId = '{account_id}'",
+    'RelatoriosDeNegocios': "SELECT count() FROM BusinessReport WHERE AccountId = '{account_id}'",
+    'Documentos': "SELECT count() FROM Document WHERE AccountId = '{account_id}'"
 }
 
 def load_no_info_accounts():
-    """Carrega contas do arquivo conta_duplicadas.xlsx com Status 'NO INFO'."""
+    """Carrega contas com Status 'NO INFO' do arquivo conta_duplicadas.xlsx."""
     try:
         file_path = 'data_source/conta_duplicadas.xlsx'
         df = pd.read_excel(file_path)
@@ -35,7 +36,7 @@ def load_no_info_accounts():
         return None
 
 def load_other_accounts():
-    """Carrega contas do arquivo conta_duplicadas.xlsx com Status diferente de 'NO INFO'."""
+    """Carrega contas com Status diferente de 'NO INFO' do arquivo conta_duplicadas.xlsx."""
     try:
         file_path = 'data_source/conta_duplicadas.xlsx'
         df = pd.read_excel(file_path)
@@ -47,7 +48,7 @@ def load_other_accounts():
         return None
 
 def get_related_counts(sf, account_id):
-    """Retorna a contagem de objetos relacionados para uma conta usando o ID da conta."""
+    """Retorna a contagem de objetos relacionados para uma conta usando o ID da conta no Salesforce."""
     counts = {}
     for key, query in RELATED_OBJECT_QUERIES.items():
         try:
@@ -59,7 +60,7 @@ def get_related_counts(sf, account_id):
     return counts
 
 def process_accounts(sf, accounts_df, output_path):
-    """Processa contas, adiciona contagens de objetos relacionados e salva em um novo arquivo Excel."""
+    """Processa as contas, adiciona as contagens de objetos relacionados e salva em um novo arquivo Excel."""
     try:
         accounts_copy = accounts_df.copy()
         counts_data = {key: [] for key in RELATED_OBJECT_QUERIES.keys()}
@@ -82,7 +83,7 @@ def process_accounts(sf, accounts_df, output_path):
         return None
 
 def process_all_accounts(sf, only_no_info=False):
-    """Processa contas 'NO INFO' e demais contas conforme especificado."""
+    """Processa contas 'NO INFO' e outras contas conforme especificado."""
     if only_no_info:
         no_info_accounts = load_no_info_accounts()
         if no_info_accounts is not None and not no_info_accounts.empty:
