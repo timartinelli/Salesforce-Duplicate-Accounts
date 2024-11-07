@@ -59,7 +59,7 @@ Salesforce-Duplicate-Accounts/
 ├── requirements.txt             # File with the project's dependencies
 ├── LICENSE                      # Project license file
 └── README.md                    # Main file with project description
-
+```
 
 ## Project Setup
 
